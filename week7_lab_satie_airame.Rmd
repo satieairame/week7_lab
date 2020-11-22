@@ -1,0 +1,228 @@
+---
+title: "week7_lab"
+author: "Satie Airame"
+date: "11/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Objects and classes
+
+# Vectors
+
+### Creating a vector
+
+```{r}
+# Numeric vector
+my_vector <- vector(mode = "numeric", length = 100) # creates only zeros unless otherwise specified, length can be anything you want
+
+# Logical vector
+my_second_vector <- vector(mode = "logical", length = 20) # contains pipe logical (TRUE/FALSE), default is FALSE (0), also known as Boolean operators
+```
+
+### Vector properties
+
+#### Length
+```{r}
+length(my_vector) # call the length of the vector
+length(my_second_vector)
+```
+
+#### Class
+
+```{r}
+# What is is my vector?
+class(my_vector)
+class(my_second_vector)
+```
+#### Indexing (accessing) vectors
+
+```{r}
+#Using c to create a vector
+
+my_vector <- c(1:50)
+
+# What's the first element?
+my_vector[1]
+
+# What are all of the elements except the first one?
+my_vector[-1]
+
+# What's the seventh element?
+my_vector[7]
+
+# Select a range from a vector (from the third object to the seventh object)
+my_vector[3:7]
+```
+
+## Matrices (vectors with length in 2 directions)
+
+### Creating matrices
+
+```{r}
+# Create a 10 x 10 matrix full of NA's
+my_matrix <- matrix(data = 1:100, nrow = 20, ncol = 5) # Store numbers from 1-100 in 20 rows in 5 columns
+
+```
+## Matrix properties
+
+#### Dimensions (dim)
+
+```{r}
+dim(my_matrix) # Gives 2 numbers: first is number of ROWS, second is number of COLUMNS
+```
+
+#### Length
+
+```{r}
+# How many elements are there?
+length(my_matrix) # Shows number of elements
+```
+
+#### Class
+
+```{r}
+class(my_matrix)
+```
+
+# An array is a bidimensional matrix
+
+#### Indexing
+
+```{r}
+my_matrix[2,] # Asks what values are in the second ROW, the first number always indicates ROWS. Second space (COLUMNS) is empty, so R assumes you want all of the values in row 2.
+
+# Index a column
+my_matrix[,3]# Asks what values are in the third COLUMN, the second number always indicates COLUMNS. First space (ROWS) is empty, so R assumes you want all of the values in COLUMN 3.
+
+# Index a given cell
+my_matrix[8,3] # Index value for Row 8 and column 3
+
+# Index and replace
+my_matrix[8,3] <- 100000 # Put 100000 in row 8 and column 3
+
+# Replace an entire column
+my_matrix[,5] <- 10 # Replace everything in column 5 with "10"
+
+
+```
+
+# Control Flow
+
+## 'for' loops # May you do something until condition is met
+
+variable(counter), sequence, expression
+
+```{r}
+for (i in 1:10) # specify variable i and specify sequence i = 1, i = 2, i = 3, etc.
+  print("Hello world!")
+```
+
+# Generating random numbers in R
+
+```{r}
+rnorm(n=5, mean = 10, sd = 2) #random normal distribution, 5 observations, with mean 10, sd = 2
+```
+
+# Let's combine all of the above.
+
+We will use "numeric" to create an empty vector.
+We will use "for" to iterate along items of that empty vector
+We will use "[ ] to access each slot and fill-in thta empty vectore
+We will use "rnorm" to sample values from a random normal distribution
+We will plot the trend
+
+Discrete Time Logistic Growth Equation
+
+$$N_{t}=N_{t-1} + r\left(1-\frac{N_{t-1}}{K}\right)$$
+
+where r is the intrinsic growth rate
+and K = carrying capacity 
+
+Density dependence due to resource limitation.
+
+$$
+r\sim norm(\mu = 1.5, \sigma = 0.8)
+$$
+
+## Writing the code down
+
+```{r}
+# Set up model parameters
+K <- 100 #individuals
+nsteps <- 100 #years
+mu <- 1.4
+sigma <- 1
+
+# Set up model objects
+
+N <- vector(mode = "numeric", length = nsteps)
+N[1] <- 25
+
+# Model it
+for(t in 2:nsteps){ # create repeating function beginning at year 2
+  r <- rnorm(n = 1, mean = mu, sd = sigma) # create random value of r
+  N[t] <- N[t-1] + r * (1 - (N[t-1]/K))  # t is counter from for loop
+}
+  
+# Visualize it
+plot(N)
+
+```
+# Something more
+We will use "matrix" to create an empty matrix (rows are time, columns are runs)
+We will repeat the process
+
+```{r}
+# Set up model parameters
+K <- 100 #individuals
+nsteps <- 100 #years
+mu <- 0.4
+sigma <- 1
+
+# Set up model objects
+
+N <- matrix(data=NA, nrow = nsteps, ncol = 100) # NA is better than 0 because NA means no value where 0 means there were no individuals. 
+N[1,] <- 25 # need to add a comma to specify this is a matrix
+
+# Model it
+for(t in 2:nsteps){ # create repeating function beginning at year 2
+  r <- rnorm(n = 100, mean = mu, sd = sigma) # create random value of r
+  N[t,] <- N[t-1,] + r * (1 - (N[t-1,]/K))  # t is counter from for loop, need to add commas to indicate matrix 
+}
+  
+# Visualize it
+matplot(N, type = "l") # indicate that type is linear
+
+```
+
+# Bring in your friends
+
+Covert it to things we know about: ggplot
+
+```{r}
+# Load tidyverse
+ library(tidyverse)
+#Create data.frame
+my_data <- as_tibble(N) %>% 
+  mutate(time = 1:nsteps) %>% 
+  gather(run, N, -time)
+# Visualize it
+ggplot(data = my_data, mapping = aes(x = time, y = N))+
+  geom_line(aes(group = run), size = 0.1, alpha = 0.5)+ # one geom_line object for each model run
+  stat_summary(geom = "line", fun = mean, color = "red", size = 1)+ # create average line of all runs, use the function ("fun") mean and color red
+  theme_bw()+
+  labs(x = "Time (years)", y = "Population size (N)")
+ 
+
+```
+
+
+
+
+
+
+
